@@ -6,6 +6,7 @@ Parts of this code were originally based on the gtp module
 in the Deep-Go project by Isaac Henrion and Amos Storkey 
 at the University of Edinburgh.
 """
+from board_base import GO_POINT
 import traceback
 from sys import stdin, stdout, stderr
 from board_util import (
@@ -20,7 +21,15 @@ from board_util import (
 )
 import numpy as np
 import re
+from typing import List, Tuple
+from pattern_util import PatternUtil
 
+def sorted_point_string(points: List[GO_POINT], boardsize: int) -> str:
+    result = []
+    for point in points:
+        x, y = point_to_coord(point, boardsize)
+        result.append(format_point((x, y)))
+    return " ".join(sorted(result))
 
 class GtpConnection:
     def __init__(self, go_engine, board, debug_mode=False):
@@ -313,6 +322,24 @@ class GtpConnection:
         # remove this respond and implement this method
         self.respond('Implement This for Assignment 2')
 
+    def policy_moves_cmd(self, args: List[str]) -> None:
+        """
+        Return list of policy moves for the current_player of the board
+        """
+        policy_moves, type_of_move = PatternUtil.generate_all_policy_moves(
+            self.board, self.go_engine.args.use_pattern, self.go_engine.args.check_selfatari
+        )
+        if len(policy_moves) == 0:
+            self.respond("Pass")
+        else:
+            response = (
+                type_of_move + " " +
+                sorted_point_string(policy_moves, self.board.size)
+            )
+            self.respond(response)
+
+    def selection_cmd()(self, args) -> None:
+        
 def point_to_coord(point, boardsize):
     """
     Transform point given as board array index 
