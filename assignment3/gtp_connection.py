@@ -21,8 +21,9 @@ from board_util import (
 )
 import numpy as np
 import re
-from typing import List, Tuple
+from typing import List
 from pattern_util import PatternUtil
+from ucb import runUcb
 
 def sorted_point_string(points: List[GO_POINT], boardsize: int) -> str:
     result = []
@@ -61,7 +62,10 @@ class GtpConnection:
             "play": self.play_cmd,
             "gogui-rules_legal_moves":self.gogui_rules_legal_moves_cmd,
             "gogui-rules_final_result":self.gogui_rules_final_result_cmd,
-            "solve":self.solve_cmd
+            "solve":self.solve_cmd,
+            "policy":self.policy_cmd,
+            "selection":self.selection_cmd,
+            "policy_moves":self.policy_moves_cmd
         }
 
         # used for argument checking
@@ -306,7 +310,13 @@ class GtpConnection:
         # change this method to use your solver
         board_color = args[0].lower()
         color = color_to_int(board_color)
-        move = self.go_engine.get_move(self.board, color)
+        legal_moves = GoBoardUtil.generate_legal_moves(
+            self.board, self.board.current_player)
+        if self.go_engine.policy == "pattern":
+            if self.go_engine.selection == "ucb":
+                move = runUcb(self, self.board, 0.4, legal_moves, color)
+        else:
+            move = self.go_engine.get_move(self.board, color)
         if move is None:
             self.respond('unknown')
             return
@@ -324,7 +334,7 @@ class GtpConnection:
 
     def policy_moves_cmd(self, args: List[str]) -> None:
         """
-        Return list of policy moves for the current_player of the board
+        Return list of policy moves for the current_player of the board. Code taken from Go3.py
         """
         policy_moves, type_of_move = PatternUtil.generate_all_policy_moves(
             self.board, self.go_engine.args.use_pattern, self.go_engine.args.check_selfatari
@@ -338,8 +348,18 @@ class GtpConnection:
             )
             self.respond(response)
 
-    def selection_cmd()(self, args) -> None:
-        
+    def selection_cmd(self, args) -> None:
+        if args[0] != 'rr' or args[0] != 'ucb':
+            self.error("Argument ({}) must be rr or ucb".format(args[0]))
+        self.go_engine.selection = args
+        self.respond()
+
+    def policy_cmd(self, args):
+        if args[0] != 'random' or args[0] != 'pattern':
+            self.error("Argument ({}) must be random or pattern".format(args[0]))
+        self.go_engine.policy = args
+        self.respond()
+
 def point_to_coord(point, boardsize):
     """
     Transform point given as board array index 
