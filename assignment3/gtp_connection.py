@@ -9,6 +9,8 @@ at the University of Edinburgh.
 from board_base import GO_POINT
 import traceback
 from sys import stdin, stdout, stderr
+
+from NoGoMC import NoGo3
 from board_util import (
     GoBoardUtil,
     BLACK,
@@ -17,7 +19,7 @@ from board_util import (
     BORDER,
     PASS,
     MAXSIZE,
-    coord_to_point,
+    coord_to_point, GO_POINT,
 )
 import numpy as np
 import re
@@ -63,10 +65,12 @@ class GtpConnection:
             "gogui-rules_legal_moves":self.gogui_rules_legal_moves_cmd,
             "gogui-rules_final_result":self.gogui_rules_final_result_cmd,
             "solve":self.solve_cmd,
-            "policy":self.policy_cmd,
-            "selection":self.selection_cmd,
-            "policy_moves":self.policy_moves_cmd
+            'policy': self.policy_cmd,
+            'selection': self.selection_cmd,
+            'policy_moves': self.policy_moves_cmd
         }
+        self.policy = 'random'
+        self.selection = 'rr'
 
         # used for argument checking
         # values: (required number of arguments,
@@ -269,9 +273,9 @@ class GtpConnection:
             self.respond('unknown')
         else:
             if self.board.current_player == BLACK:
-                self.respond('')
+                self.respond('w')
             else:
-                self.respond('')
+                self.respond('b')
 
     def play_cmd(self, args):
         """
@@ -310,6 +314,10 @@ class GtpConnection:
         # change this method to use your solver
         board_color = args[0].lower()
         color = color_to_int(board_color)
+        
+        moves = self.get_all_moves()
+        move = None if len(moves) == 0 else moves[0][0]
+        
         legal_moves = GoBoardUtil.generate_legal_moves(
             self.board, self.board.current_player)
         if self.go_engine.policy == "pattern":
@@ -321,7 +329,7 @@ class GtpConnection:
             self.respond('unknown')
             return
         move_coord = point_to_coord(move, self.board.size)
-        move_as_string = format_point(move_coord)
+        move_as_string = format_point(move_coord).lower()
         if self.board.is_legal(move, color):
             self.board.play_move(move, color)
             self.respond(move_as_string)
@@ -332,33 +340,47 @@ class GtpConnection:
         # remove this respond and implement this method
         self.respond('Implement This for Assignment 2')
 
-    def policy_moves_cmd(self, args: List[str]) -> None:
-        """
-        Return list of policy moves for the current_player of the board. Code taken from Go3.py
-        """
-        policy_moves, type_of_move = PatternUtil.generate_all_policy_moves(
-            self.board, self.go_engine.args.use_pattern, self.go_engine.args.check_selfatari
-        )
-        if len(policy_moves) == 0:
-            self.respond("Pass")
-        else:
-            response = (
-                type_of_move + " " +
-                sorted_point_string(policy_moves, self.board.size)
-            )
-            self.respond(response)
-
-    def selection_cmd(self, args) -> None:
-        if args[0] != 'rr' or args[0] != 'ucb':
-            self.error("Argument ({}) must be rr or ucb".format(args[0]))
-        self.go_engine.selection = args
-        self.respond()
-
     def policy_cmd(self, args):
-        if args[0] != 'random' or args[0] != 'pattern':
-            self.error("Argument ({}) must be random or pattern".format(args[0]))
-        self.go_engine.policy = args
-        self.respond()
+        # set the playout policy
+        if len(args) == 0:
+            self.respond('Lack of policy type')
+            return
+        policy = args[0].lower()
+        if policy not in ['random', 'pattern']:
+            self.respond(f'Invalid policy type: {policy}')
+            return
+        self.policy = policy
+        self.respond('')
+
+    def selection_cmd(self, args):
+        # set the move selection machanism
+        if len(args) == 0:
+            self.respond('Lack of move selection machanism')
+            return
+        selection = args[0].lower()
+        if selection not in ['rr', 'ucb']:
+            self.respond(f'Invalid  move selection machanism: {selection}')
+            return
+        self.selection = selection
+        self.respond('')
+
+    def policy_moves_cmd(self, args):
+        # get the legal moves and their winning probability
+        moves = self.get_all_moves()
+        moves = [(format_point(point_to_coord(move[0], self.board.size)).lower(), move[1]) for move in moves]
+        moves.sort(key=lambda x: x[0])
+        msg = ' '.join([move[0] for move in moves])
+        msg = msg + ' ' + ' '.join([str(round(move[1],3)) for move in moves])
+        self.respond(msg)
+
+    def get_all_moves(self):
+        """
+        Get all legal moves and their winning probability
+        """
+        mc = NoGo3(10, self.selection, self.policy)
+        moves_list = mc.get_moves(self.board, self.board.current_player)
+        moves_list.sort(key=lambda x: x[1], reverse=True)
+        return moves_list
 
 def point_to_coord(point, boardsize):
     """
@@ -419,3 +441,4 @@ def color_to_int(c):
     """convert character to the appropriate integer code"""
     color_to_int = {"b": BLACK, "w": WHITE, "e": EMPTY, "BORDER": BORDER}
     return color_to_int[c]
+

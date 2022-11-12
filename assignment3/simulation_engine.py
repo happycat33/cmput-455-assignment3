@@ -7,7 +7,7 @@ class Go3Args:
                  check_selfatari: bool, limit: int) -> None:
         self.sim: int = sim
         self.move_select: str = move_select
-        self.use_ucb: bool = (move_select != "simple")
+        self.use_ucb: bool = (move_select == "ucb")
         self.sim_rule: str = sim_rule
         self.random_simulation: bool = (sim_rule == "random")
         self.check_selfatari: bool = check_selfatari

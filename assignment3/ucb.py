@@ -2,6 +2,13 @@
 # UCB algorithm
 # Written by Martin Mueller
 
+from numpy import signedinteger, intc
+from numpy.typing import _32Bit
+
+from board_base import GO_COLOR, GO_POINT, NO_POINT, PASS, MAXSIZE
+from board import GoBoard
+
+
 from board_base import GO_COLOR, GO_POINT, NO_POINT, PASS
 from board import GoBoard
 from gtp_connection import point_to_coord, format_point
@@ -9,13 +16,39 @@ from simulation_engine import GoSimulationEngine
 
 import sys
 from math import log, sqrt
-from typing import List, Tuple
+
+from typing import List, Tuple, Union, Any
 
 INFINITY = float("inf")
 
 STATS = List[List[int]]
 # tuple = (move, percentage, wins, pulls)
 TUPLE = Tuple[str, float, int, int]
+
+def point_to_coord(point, boardsize):
+    """
+    Transform point given as board array index
+    to (row, col) coordinate representation.
+    Special case: PASS is not transformed
+    """
+    if point == PASS:
+        return PASS
+    else:
+        NS = boardsize + 1
+        return divmod(point, NS)
+
+def format_point(move):
+    """
+    Return move coordinates as a string such as 'A1', or 'PASS'.
+    """
+    assert MAXSIZE <= 25
+    column_letters = "ABCDEFGHJKLMNOPQRSTUVWXYZ"
+    if move == PASS:
+        return "PASS"
+    row, col = move
+    if not 0 <= row < MAXSIZE or not 0 <= col < MAXSIZE:
+        raise ValueError
+    return column_letters[col - 1] + str(row)
 
 def mean(stats: STATS, i: int) -> float:
     return stats[i][0] / stats[i][1]
@@ -77,7 +110,8 @@ def writeMoves(board: GoBoard, moves: List[GO_POINT], stats: STATS) -> None:
 
 
 def runUcb(player: GoSimulationEngine, board: GoBoard, C: float, 
-    moves: List[GO_POINT], toplay: GO_COLOR) -> GO_POINT:
+           moves: List[GO_POINT], toplay: GO_COLOR) -> Union[
+        signedinteger[_32Bit], intc, list[tuple[Any, float]]]:
     stats = [[0, 0] for _ in moves]
     num_simulation = len(moves) * player.args.sim
     for n in range(num_simulation):
@@ -86,6 +120,9 @@ def runUcb(player: GoSimulationEngine, board: GoBoard, C: float,
         if result == toplay:
             stats[moveIndex][0] += 1  # win
         stats[moveIndex][1] += 1
+
+    total = sum([stats[i][0] for i in range(len(moves))])
+    return [(moves[i], 0 if total == 0 else stats[i][0] / total) for i in range(len(moves))]
     bestIndex = bestArm(stats)
     best = moves[bestIndex]
     writeMoves(board, moves, stats)
