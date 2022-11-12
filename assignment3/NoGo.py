@@ -13,7 +13,7 @@ class Go0:
 
         Parameters
         ----------
-        name : str
+        name : strOverview
             name of the player (used by the GTP interface).
         version : float
             version number (used by the GTP interface).
