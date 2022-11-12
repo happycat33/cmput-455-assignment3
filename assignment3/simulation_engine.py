@@ -42,4 +42,3 @@ class GoSimulationEngine(GoEngine):
             if result == toplay:
                 wins += 1
         return wins
-

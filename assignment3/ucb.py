@@ -11,7 +11,6 @@ from board import GoBoard
 
 from board_base import GO_COLOR, GO_POINT, NO_POINT, PASS
 from board import GoBoard
-from gtp_connection import point_to_coord, format_point
 from simulation_engine import GoSimulationEngine
 
 import sys
@@ -110,8 +109,7 @@ def writeMoves(board: GoBoard, moves: List[GO_POINT], stats: STATS) -> None:
 
 
 def runUcb(player: GoSimulationEngine, board: GoBoard, C: float, 
-           moves: List[GO_POINT], toplay: GO_COLOR) -> Union[
-        signedinteger[_32Bit], intc, list[tuple[Any, float]]]:
+    moves: List[GO_POINT], toplay: GO_COLOR) -> GO_POINT:
     stats = [[0, 0] for _ in moves]
     num_simulation = len(moves) * player.args.sim
     for n in range(num_simulation):

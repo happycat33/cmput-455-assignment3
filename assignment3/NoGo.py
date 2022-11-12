@@ -104,7 +104,7 @@ def parse_args() -> Tuple[int,str,str]:
     """
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        "--simnum",
+        "--sim",
         type=int,
         default=10,
         help="number of simulations per legal move",
@@ -119,7 +119,7 @@ def parse_args() -> Tuple[int,str,str]:
         "--simrule",
         type=str,
         default="random",
-        help="type of simulation policy: random or rulebased",
+        help="type of simulation policy: random or patternbased",
     )
 
     """
@@ -130,11 +130,11 @@ def parse_args() -> Tuple[int,str,str]:
     move_select = args.moveselect
     sim_rule = args.simrule
 
-    if move_select != "simple" and move_select != "ucb":
-        print("moveselect must be simple or ucb")
+    if move_select != "roundrobin" and move_select != "ucb":
+        print("moveselect must be round robin or ucb")
         sys.exit(0)
-    if sim_rule != "random" and sim_rule != "rulebased":
-        print("simrule must be random or rulebased")
+    if sim_rule != "random" and sim_rule != "pattern":
+        print("simrule must be random or patternbased")
         sys.exit(0)
 
     return sim, move_select, sim_rule

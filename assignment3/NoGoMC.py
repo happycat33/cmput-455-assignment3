@@ -29,8 +29,7 @@ class NoGo3(GoSimulationEngine):
         cboard.play_move(move, toplay)
         return self.playGame(cboard)
 
-    def get_moves(self, board: GoBoard, color: GO_COLOR) -> Union[
-        signedinteger[_32Bit], intc, list[tuple[Any, float]]]:
+    def get_moves(self, board: GoBoard, color: GO_COLOR) -> GO_POINT:
         """
         Run one-ply MC simulations to get a move to play.
         """
