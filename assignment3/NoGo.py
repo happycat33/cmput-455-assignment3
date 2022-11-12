@@ -15,7 +15,8 @@ from ucb import runUcb
 from simulation_util import writeMoves, select_best_move
 
 class Go0(GoSimulationEngine):
-    def __init__(self,numSimulations:int, move_select:str, sim_rule:str):
+    def __init__(self,numSimulations:int, move_select:str, sim_rule:str, 
+                 self_atari: bool, limit: int = 100) -> None:
         """
         NoGo player that selects moves randomly from the set of legal moves.
 
@@ -27,7 +28,7 @@ class Go0(GoSimulationEngine):
             version number (used by the GTP interface).
         """
         GoSimulationEngine.__init__(self, "Go0", 1.0,
-                                    sim, move_select, sim_rule)
+                                    sim, move_select, sim_rule, self_atari, limit)
 
     def simulate(self, board: GoBoard, move:GO_POINT, toplay:GO_COLOR) -> GO_COLOR:
         """
@@ -121,6 +122,12 @@ def parse_args() -> Tuple[int,str,str]:
         default="random",
         help="type of simulation policy: random or patternbased",
     )
+    parser.add_argument(
+	"--movefilter",
+	action="store_true",
+	default=False,
+	help="whether use move filter or not",
+    )
 
     """
     Code used from Go3 program
@@ -129,6 +136,7 @@ def parse_args() -> Tuple[int,str,str]:
     sim = args.sim
     move_select = args.moveselect
     sim_rule = args.simrule
+    check_selfatari = args.movefilter
 
     if move_select != "roundrobin" and move_select != "ucb":
         print("moveselect must be round robin or ucb")
@@ -137,18 +145,18 @@ def parse_args() -> Tuple[int,str,str]:
         print("simrule must be random or patternbased")
         sys.exit(0)
 
-    return sim, move_select, sim_rule
+    return sim, move_select, sim_rule, check_selfatari
 
 
-def run(sim:int, move_select:str, sim_rule:str):
+def run(sim:int, move_select:str, sim_rule:str, self_atari:bool):
     """
     start the gtp connection and wait for commands.
     """
     board = GoBoard(7)
-    engine : Go0 = Go0(sim,move_select,sim_rule)
+    engine : Go0 = Go0(sim,move_select,sim_rule, self_atari)
     con = GtpConnection(Go0(), board)
     con.start_connection()
 
 if __name__ == "__main__":
-    sim, move_select, sim_rule = parse_args()
-    run(sim,move_select,sim_rule)
+    sim, move_select, sim_rule, self_atari = parse_args()
+    run(sim,move_select,sim_rule, self_atari)
