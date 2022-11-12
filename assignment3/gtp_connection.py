@@ -6,6 +6,7 @@ Parts of this code were originally based on the gtp module
 in the Deep-Go project by Isaac Henrion and Amos Storkey 
 at the University of Edinburgh.
 """
+from board_base import GO_POINT
 import traceback
 from sys import stdin, stdout, stderr
 
@@ -22,7 +23,16 @@ from board_util import (
 )
 import numpy as np
 import re
+from typing import List
+from pattern_util import PatternUtil
+from ucb import runUcb
 
+def sorted_point_string(points: List[GO_POINT], boardsize: int) -> str:
+    result = []
+    for point in points:
+        x, y = point_to_coord(point, boardsize)
+        result.append(format_point((x, y)))
+    return " ".join(sorted(result))
 
 class GtpConnection:
     def __init__(self, go_engine, board, debug_mode=False):
@@ -304,9 +314,17 @@ class GtpConnection:
         # change this method to use your solver
         board_color = args[0].lower()
         color = color_to_int(board_color)
+        
         moves = self.get_all_moves()
-
         move = None if len(moves) == 0 else moves[0][0]
+        
+        legal_moves = GoBoardUtil.generate_legal_moves(
+            self.board, self.board.current_player)
+        if self.go_engine.policy == "pattern":
+            if self.go_engine.selection == "ucb":
+                move = runUcb(self, self.board, 0.4, legal_moves, color)
+        else:
+            move = self.go_engine.get_move(self.board, color)
         if move is None:
             self.respond('unknown')
             return

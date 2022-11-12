@@ -1,15 +1,22 @@
 # Cmput 455 sample code
 # UCB algorithm
 # Written by Martin Mueller
+
 from numpy import signedinteger, intc
 from numpy.typing import _32Bit
 
 from board_base import GO_COLOR, GO_POINT, NO_POINT, PASS, MAXSIZE
 from board import GoBoard
+
+
+from board_base import GO_COLOR, GO_POINT, NO_POINT, PASS
+from board import GoBoard
+from gtp_connection import point_to_coord, format_point
 from simulation_engine import GoSimulationEngine
 
 import sys
 from math import log, sqrt
+
 from typing import List, Tuple, Union, Any
 
 INFINITY = float("inf")
@@ -17,7 +24,6 @@ INFINITY = float("inf")
 STATS = List[List[int]]
 # tuple = (move, percentage, wins, pulls)
 TUPLE = Tuple[str, float, int, int]
-
 
 def point_to_coord(point, boardsize):
     """
@@ -43,7 +49,6 @@ def format_point(move):
     if not 0 <= row < MAXSIZE or not 0 <= col < MAXSIZE:
         raise ValueError
     return column_letters[col - 1] + str(row)
-
 
 def mean(stats: STATS, i: int) -> float:
     return stats[i][0] / stats[i][1]
@@ -118,3 +123,7 @@ def runUcb(player: GoSimulationEngine, board: GoBoard, C: float,
 
     total = sum([stats[i][0] for i in range(len(moves))])
     return [(moves[i], 0 if total == 0 else stats[i][0] / total) for i in range(len(moves))]
+    bestIndex = bestArm(stats)
+    best = moves[bestIndex]
+    writeMoves(board, moves, stats)
+    return best

@@ -14,7 +14,7 @@ class Go3Args:
         self.use_pattern: bool = not self.random_simulation
         self.limit: int = limit
 
-class   GoSimulationEngine(GoEngine):
+class GoSimulationEngine(GoEngine):
     def __init__(self, name: str, version: float, 
                  sim: int, move_select: str, sim_rule: str, 
                  check_selfatari: bool, limit: int = 100) -> None:
