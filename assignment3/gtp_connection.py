@@ -316,16 +316,7 @@ class GtpConnection:
         moves = self.get_all_moves()
         move = None if len(moves) == 0 else moves[0][0]
         
-        legal_moves = GoBoardUtil.generate_legal_moves(
-            self.board, self.board.current_player)
-        if self.go_engine.policy == "pattern":
-            if self.go_engine.selection == "ucb":
-                move = runUcb(self, self.board, 0.4, legal_moves, color)
-        else:
-            move = self.go_engine.get_move(self.board, color)
-        if move is None:
-            self.respond('unknown')
-            return
+        legal_moves = GoBoardUtil.generate_legal_moves
         move_coord = point_to_coord(move, self.board.size)
         move_as_string = format_point(move_coord).lower()
         if self.board.is_legal(move, color):

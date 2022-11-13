@@ -3,7 +3,7 @@
 # Set the path to your python3 above
 
 import sys
-from board_base import DEFAULT_SIZE, GO_POINT, GO_COLOR, PASS, opponent
+from board_base import GO_POINT, GO_COLOR, PASS, opponent, BLACK, WHITE
 from gtp_connection import GtpConnection
 from board_util import GoBoardUtil
 from board import GoBoard
@@ -16,7 +16,7 @@ from simulation_util import writeMoves, select_best_move
 
 class Go0(GoSimulationEngine):
     def __init__(self,numSimulations:int, move_select:str, sim_rule:str, 
-                 self_atari: bool, limit: int = 100) -> None:
+                 check_selfatari: bool, limit: int = 100) -> None:
         """
         NoGo player that selects moves randomly from the set of legal moves.
 
@@ -28,7 +28,7 @@ class Go0(GoSimulationEngine):
             version number (used by the GTP interface).
         """
         GoSimulationEngine.__init__(self, "Go0", 1.0,
-                                    sim, move_select, sim_rule, self_atari, limit)
+                                    sim, move_select, sim_rule, check_selfatari, limit)
 
     def simulate(self, board: GoBoard, move:GO_POINT, toplay:GO_COLOR) -> GO_COLOR:
         """
@@ -97,7 +97,19 @@ class Go0(GoSimulationEngine):
                 nuPasses = 0
             if nuPasses >= 2:
                 break
-        return winner(board, self.komi)
+        return self.get_winner(board)
+
+    def get_winner(self, board: GoBoard):
+        # get current winner
+        legal_moves = GoBoardUtil.generate_legal_moves(board,
+                                                       board.current_player)
+        if len(legal_moves) > 0:
+            return None
+        else:
+            if board.current_player == BLACK:
+                return WHITE
+            else:
+                return BLACK
 
 def parse_args() -> Tuple[int,str,str]:
     """
@@ -148,15 +160,15 @@ def parse_args() -> Tuple[int,str,str]:
     return sim, move_select, sim_rule, check_selfatari
 
 
-def run(sim:int, move_select:str, sim_rule:str, self_atari:bool):
+def run(sim:int, move_select:str, sim_rule:str, check_selfatari:bool):
     """
     start the gtp connection and wait for commands.
     """
     board = GoBoard(7)
-    engine : Go0 = Go0(sim,move_select,sim_rule, self_atari)
-    con = GtpConnection(Go0(), board)
+    engine : Go0 = Go0(sim,move_select,sim_rule, check_selfatari)
+    con = GtpConnection(engine, board)
     con.start_connection()
 
 if __name__ == "__main__":
-    sim, move_select, sim_rule, self_atari = parse_args()
-    run(sim,move_select,sim_rule, self_atari)
+    sim, move_select, sim_rule, check_selfatari = parse_args()
+    run(sim,move_select,sim_rule, check_selfatari)
