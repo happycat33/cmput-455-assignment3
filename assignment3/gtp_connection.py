@@ -65,10 +65,12 @@ class GtpConnection:
             "solve":self.solve_cmd,
             'policy': self.policy_cmd,
             'selection': self.selection_cmd,
-            'policy_moves': self.policy_moves_cmd
+            'policy_moves': self.policy_moves_cmd,
+            'selfatari': self.selfatari_cmd,
+            'used_pattern': self.used_pattern_cmd
         }
-        self.policy = 'random'
-        self.selection = 'rr'
+        self.policy = ""
+        self.selection = ""
 
         # used for argument checking
         # values: (required number of arguments,
@@ -80,6 +82,8 @@ class GtpConnection:
             "genmove": (1, "Usage: genmove {w,b}"),
             "play": (2, "Usage: play {b,w} MOVE"),
             "legal_moves": (1, "Usage: legal_moves {w,b}"),
+            "selfatari": (1,"Usage: selfatari BOOL"),
+            "used_pattern": (1, "Usage: used_pattern BOOL")
         }
 
     def write(self, data):
@@ -306,17 +310,36 @@ class GtpConnection:
             self.respond()
         except Exception as e:
             self.respond("Error: {}".format(str(e)))
+    
+    #edit in attempt to fix failed 6 tests
+    def selfatari_cmd(self,args:List[str]) -> None:
+        valid = [True, False]
+        current = bool(int(args[0]))
+        if current not in valid:
+             self.error("Argument ({}) must be True or False".format(current))
+        self.go_engine.args.check_selfatari = current
+        self.respond()
+    
+     #edit in attempt to fix failed 6 tests
+    def used_pattern_cmd(self, args: List[str]) -> None:
+        valid = [False, True]
+        current = bool(int(args[0]))
+        if current not in valid:
+            self.error("Argument ({}) must be True or False".format(current))
+        self.go_engine.args.used_pattern = current
+        self.go_engine.args.random_simulation = not current
+        self.respond()
 
+    #edited in attempt to fix 6 failed tests
     def genmove_cmd(self, args):
         """ generate a move for color args[0] in {'b','w'} """
         # change this method to use your solver
         board_color = args[0].lower()
         color = color_to_int(board_color)
-        
-        moves = self.get_all_moves()
-        move = None if len(moves) == 0 else moves[0][0]
-        
-        legal_moves = GoBoardUtil.generate_legal_moves
+        move = self.get_all_moves(self.board,color)
+        if move is None:
+            self.respond("unknown")
+            return
         move_coord = point_to_coord(move, self.board.size)
         move_as_string = format_point(move_coord).lower()
         if self.board.is_legal(move, color):
@@ -324,7 +347,6 @@ class GtpConnection:
             self.respond(move_as_string)
         else:
             self.respond("Illegal move: {}".format(move_as_string))
-
     def solve_cmd(self, args):
         # remove this respond and implement this method
         self.respond('Implement This for Assignment 2')
@@ -333,34 +355,51 @@ class GtpConnection:
         # set the playout policy
         if len(args) == 0:
             self.respond('Lack of policy type')
-            return
         policy = args[0].lower()
-        if policy not in ['random', 'pattern']:
-            self.respond(f'Invalid policy type: {policy}')
-            return
         self.policy = policy
+        if policy == "random":
+            self.policy = "random"
+            print("random policy selected")
+        elif policy == "pattern":
+            self.policy = "pattern"
+            print("pattern policy selected")
+        else:
+            self.respond(f'Invalid policy type: {policy}')
         self.respond('')
 
     def selection_cmd(self, args):
         # set the move selection machanism
         if len(args) == 0:
             self.respond('Lack of move selection machanism')
-            return
         selection = args[0].lower()
-        if selection not in ['rr', 'ucb']:
-            self.respond(f'Invalid  move selection machanism: {selection}')
-            return
         self.selection = selection
+        if selection == "rr":
+            self.move_selection = "rr"
+            print("round robin move selected")
+        elif selection == "ucb":
+            self.move_selection = "ucb"
+            print("ucb move selected")
+        else:
+            self.respond(f'Invalid  move selection machanism: {selection}')
         self.respond('')
 
+    # edited in attempt to fix 6 failed tests
     def policy_moves_cmd(self, args):
-        # get the legal moves and their winning probability
-        moves = self.get_all_moves()
-        moves = [(format_point(point_to_coord(move[0], self.board.size)).lower(), move[1]) for move in moves]
-        moves.sort(key=lambda x: x[0])
-        msg = ' '.join([move[0] for move in moves])
-        msg = msg + ' ' + ' '.join([str(round(move[1],3)) for move in moves])
-        self.respond(msg)
+        # get the legal moves and their winning probability for current player
+
+        policy_moves, type = PatternUtil.generate_all_policy_moves(self.board, self.go_engine.used_pattern, self.go_engine.check_selfatari)
+        if len(policy_moves) == 0:
+            self.respond("Pass")
+        else:
+            message = (
+                type + " " + sorted_point_string(policy_moves, self.board.size)
+            )
+            self.respond(message)
+        # moves = [(format_point(point_to_coord(move[0], self.board.size)).lower(), move[1]) for move in moves]
+        # moves.sort(key=lambda x: x[0])
+        # msg = ' '.join([move[0] for move in moves])
+        # msg = msg + ' ' + ' '.join([str(round(move[1],3)) for move in moves])
+        # self.respond(msg)
 
     def get_all_moves(self):
         """

@@ -118,6 +118,12 @@ def runUcb(player: GoSimulationEngine, board: GoBoard, C: float,
         if result == toplay:
             stats[moveIndex][0] += 1  # win
         stats[moveIndex][1] += 1
+    
+    # edit in attempt to fix 6 failed tests
+    bestIndex = bestArm(stats)
+    best = moves[bestIndex]
+    writeMoves(board,moves,stats)
+    return best
 
-    total = sum([stats[i][0] for i in range(len(moves))])
-    return [(moves[i], 0 if total == 0 else stats[i][0] / total) for i in range(len(moves))]
+    #total = sum([stats[i][0] for i in range(len(moves))])
+    #return [(moves[i], 0 if total == 0 else stats[i][0] / total) for i in range(len(moves))]
