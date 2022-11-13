@@ -1,0 +1,32 @@
+Script started on 2022-11-14 00:08:10+08:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="80" LINES="24"]
+huolan@huolan-virtual-machine:~/Desktop$ tar assignment3.tgz
+tar: Old option 'g' requires an argument.
+Try 'tar --help' or 'tar --usage' for more information.
+huolan@huolan-virtual-machine:~/Desktop$ tar assignment3.tgz[C assignment3.tgz- assignment3.tgz[1P assignment3.tgzx assignment3.tgzv assignment3.tgzf assignment3.tgzz assignment3.tgz
+assignment3/
+assignment3/gtp_connection.py
+assignment3/PatternSelection.py
+assignment3/NoGoMC.py
+assignment3/weights.txt
+assignment3/board_util.py
+assignment3/engine.py
+assignment3/ucb.py
+assignment3/assignment3-public-tests.gtp
+assignment3/index.html
+assignment3/run_NoGo.sh
+assignment3/simulation_engine.py
+assignment3/board.py
+assignment3/board_base.py
+assignment3/NoGo.py
+huolan@huolan-virtual-machine:~/Desktop$ cd assignment3
+huolan@huolan-virtual-machine:~/Desktop/assignment3$ ls
+assignment3-public-tests.gtp  gtp_connection.py    run_NoGo.sh
+board_base.py		      index.html	   simulation_engine.py
+board.py		      NoGoMC.py		   ucb.py
+board_util.py		      NoGo.py		   weights.txt
+engine.py		      PatternSelection.py
+huolan@huolan-virtual-machine:~/Desktop/assignment3$ gogui-regress GoGui[K[K[K[K[KNoGo.py assignment3-public-tests.gtp 
+huolan@huolan-virtual-machine:~/Desktop/assignment3$ exit
+exit
+
+Script done on 2022-11-14 00:09:18+08:00 [COMMAND_EXIT_CODE="0"]

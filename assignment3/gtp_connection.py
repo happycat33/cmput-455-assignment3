@@ -8,6 +8,8 @@ at the University of Edinburgh.
 """
 import traceback
 from sys import stdin, stdout, stderr
+
+from NoGoMC import NoGo3
 from board_util import (
     GoBoardUtil,
     BLACK,
@@ -16,7 +18,7 @@ from board_util import (
     BORDER,
     PASS,
     MAXSIZE,
-    coord_to_point,
+    coord_to_point, GO_POINT,
 )
 import numpy as np
 import re
@@ -52,8 +54,13 @@ class GtpConnection:
             "play": self.play_cmd,
             "gogui-rules_legal_moves":self.gogui_rules_legal_moves_cmd,
             "gogui-rules_final_result":self.gogui_rules_final_result_cmd,
-            "solve":self.solve_cmd
+            "solve":self.solve_cmd,
+            'policy': self.policy_cmd,
+            'selection': self.selection_cmd,
+            'policy_moves': self.policy_moves_cmd
         }
+        self.policy = 'random'
+        self.selection = 'rr'
 
         # used for argument checking
         # values: (required number of arguments,
@@ -256,9 +263,9 @@ class GtpConnection:
             self.respond('unknown')
         else:
             if self.board.current_player == BLACK:
-                self.respond('')
+                self.respond('w')
             else:
-                self.respond('')
+                self.respond('b')
 
     def play_cmd(self, args):
         """
@@ -297,12 +304,14 @@ class GtpConnection:
         # change this method to use your solver
         board_color = args[0].lower()
         color = color_to_int(board_color)
-        move = self.go_engine.get_move(self.board, color)
+        moves = self.get_all_moves()
+
+        move = None if len(moves) == 0 else moves[0][0]
         if move is None:
             self.respond('unknown')
             return
         move_coord = point_to_coord(move, self.board.size)
-        move_as_string = format_point(move_coord)
+        move_as_string = format_point(move_coord).lower()
         if self.board.is_legal(move, color):
             self.board.play_move(move, color)
             self.respond(move_as_string)
@@ -312,6 +321,51 @@ class GtpConnection:
     def solve_cmd(self, args):
         # remove this respond and implement this method
         self.respond('Implement This for Assignment 2')
+
+    def policy_cmd(self, args):
+        # set the playout policy
+        if len(args) == 0:
+            self.respond('Lack of policy type')
+            return
+        policy = args[0].lower()
+        if policy not in ['random', 'pattern']:
+            self.respond(f'Invalid policy type: {policy}')
+            return
+        self.policy = policy
+        self.respond('')
+
+    def selection_cmd(self, args):
+        # set the move selection machanism
+        if len(args) == 0:
+            self.respond('Lack of move selection machanism')
+            return
+        selection = args[0].lower()
+        if selection not in ['rr', 'ucb']:
+            self.respond(f'Invalid  move selection machanism: {selection}')
+            return
+        self.selection = selection
+        self.respond('')
+
+    def policy_moves_cmd(self, args):
+        # get the legal moves and their winning probability
+        moves = self.get_all_moves(True)
+        moves = [(format_point(point_to_coord(move[0], self.board.size)).lower(), move[1]) for move in moves]
+        moves.sort(key=lambda x: x[0])
+        msg = ' '.join([move[0] for move in moves])
+        msg = msg + ' ' + ' '.join([str(round(move[1],3)) for move in moves])
+        self.respond(msg)
+
+    def get_all_moves(self, only_probability=False):
+        """
+        Get all legal moves and their winning probability
+        """
+        mc = NoGo3(10, self.selection, self.policy)
+        if only_probability:
+            moves_list = mc.get_moves_probability(self.board, self.board.current_player)
+        else:
+            moves_list = mc.get_moves(self.board, self.board.current_player)
+            moves_list.sort(key=lambda x: x[1], reverse=True)
+        return moves_list
 
 def point_to_coord(point, boardsize):
     """
@@ -372,3 +426,4 @@ def color_to_int(c):
     """convert character to the appropriate integer code"""
     color_to_int = {"b": BLACK, "w": WHITE, "e": EMPTY, "BORDER": BORDER}
     return color_to_int[c]
+

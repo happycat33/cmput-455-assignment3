@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python3
 # /usr/bin/python3
 # Set the path to your python3 above
 
@@ -13,7 +13,7 @@ class Go0:
 
         Parameters
         ----------
-        name : str
+        name : strOverview
             name of the player (used by the GTP interface).
         version : float
             version number (used by the GTP interface).
